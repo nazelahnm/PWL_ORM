@@ -51,4 +51,9 @@
     </tr>
     @endforeach
 </table>
+            Halaman : {{ $mahasiswa->currentPage() }} <br/>
+            Jumlah Data : {{ $mahasiswa->total() }} <br/>
+            Data Per Halaman : {{ $mahasiswa->perPage() }} <br/>
+            <br>
+            {{ $mahasiswa->links() }}
 @endsection
