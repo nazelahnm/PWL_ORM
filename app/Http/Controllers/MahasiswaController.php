@@ -5,24 +5,28 @@ namespace App\Http\Controllers;
 use App\Models\Mahasiswa;
 use App\Models\Kelas;
 use App\Models\Mahasiswa_MataKuliah;
+use App\Models\MataKuliah;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MahasiswaController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * * @return \Illuminate\Http\Response
      */
     public function index()
     {
         //fungsi eloquent menampilkan data menggunakan pagination
-        $mahasiswa = Mahasiswa::all(); // Mengambil semua isi tabel
+        $mahasiswa = Mahasiswa::with('kelas')->get(); // Mengambil semua isi tabel
         $posts = Mahasiswa::orderBy('Nim', 'desc')->paginate(6);
+        //Tugas nomer 2 paginate
+        $mahasiswa = Mahasiswa::paginate(5);
         return view('mahasiswas.index', compact('mahasiswa'))
-        ->with('i', (request()->input('page', 1) - 1) * 5);
+            ->with('i', (request()->input('page', 1) - 1) * 5);
     }
-    public function create()
+    public function create(Request $request)
     {
         $kelas = Kelas::all(); //mendapatkan data dari tabel kelas
         return view('mahasiswas.create', ['kelas' => $kelas]);
@@ -31,19 +35,20 @@ class MahasiswaController extends Controller
     {
         //melakukan validasi data
         $request->validate([
-                'Nim' => 'required',
-                'Nama' => 'required',
-                'Email' => 'required',
-                'Kelas' => 'required',
-                'Jurusan' => 'required',
-                'No_Handphone' => 'required',
-                'TanggalLahir' => 'required',
+            'Nim' => 'required',
+            'Nama' => 'required',
+            'foto' => 'required|file|images|mimes:jpeg,png,jpg|max:100',
+            'Email' => 'required',
+            'Kelas' => 'required',
+            'Jurusan' => 'required',
+            'No_Handphone' => 'required',
+            'TanggalLahir' => 'required',
         ]);
-
         // Mahasiswa::create($validatedData);
         $mahasiswa = new Mahasiswa;
         $mahasiswa->Nim = $request->get('Nim');
         $mahasiswa->Nama = $request->get('Nama');
+        $mahasiswa->foto = $request->file('foto')->store('images', 'public');
         $mahasiswa->Email = $request->get('Email');
         $mahasiswa->TanggalLahir = $request->get('TanggalLahir');
         $mahasiswa->Jurusan = $request->get('Jurusan');
@@ -56,26 +61,24 @@ class MahasiswaController extends Controller
         $mahasiswa->kelas()->associate($kelas);
         $mahasiswa->save();
         //fungsi eloquent untuk menambah data
-            // Mahasiswa::create($request->all());
+        // Mahasiswa::create($request->all());
         //jika data berhasil ditambahkan, akan kembali ke halaman utama
-            return redirect()->route('mahasiswa.index')
-                ->with('success', 'Mahasiswa Berhasil Ditambahkan');
+        return redirect()->route('mahasiswa.index')
+            ->with('success', 'Mahasiswa Berhasil Ditambahkan');
     }
     public function show($Nim)
     {
         //menampilkan detail data dengan menemukan/berdasarkan Nim Mahasiswa
-        //code sebelum dibuat relasi --> $mahasiswa = Mahasiswa::find($Nim)
-        $Mahasiswa = Mahasiswa::with('kelas')->where('Nim', $Nim)->first();
+        $Mahasiswa = Mahasiswa::with('kelas')->where('nim', $Nim)->first();
         return view('mahasiswas.detail', ['Mahasiswa' => $Mahasiswa]);
-
     }
     public function edit($Nim)
     {
         //menampilkan detail data dengan menemukan berdasarkan Nim Mahasiswa untuk diedit
-        $Mahasiswa = Mahasiswa::with('kelas')->where('Nim', $Nim)->first();
+        $Mahasiswa = Mahasiswa::with('kelas')->where('nim', $Nim)->first();
         $kelas = Kelas::all(); //mendapatkan data dari tabel kelas
         return view('mahasiswas.edit', compact('Mahasiswa', 'kelas'));
-
+        
     }
     public function update(Request $request, $Nim)
     {
@@ -83,6 +86,7 @@ class MahasiswaController extends Controller
         $request->validate([
             'Nim' => 'required',
             'Nama' => 'required',
+            'foto' => 'required',
             'Email' => 'required',
             'Kelas' => 'required',
             'Jurusan' => 'required',
@@ -93,6 +97,11 @@ class MahasiswaController extends Controller
         $mahasiswa = Mahasiswa::with('kelas')->where('nim', $Nim)->first();
         $mahasiswa->Nim = $request->get('Nim');
         $mahasiswa->Nama = $request->get('Nama');
+        if($mahasiswa->foto && file_exists(storage_path('app/public/'. $mahasiswa->foto))){
+            \Storage::delete('public/'. $mahasiswa->foto);
+        }
+        $image_name = $request->file('foto')->store('images', 'public');
+        $mahasiswa->foto = $image_name;
         $mahasiswa->Email = $request->get('Email');
         $mahasiswa->TanggalLahir = $request->get('TanggalLahir');
         $mahasiswa->Jurusan = $request->get('Jurusan');
@@ -113,10 +122,11 @@ class MahasiswaController extends Controller
     public function destroy($Nim)
     {
         //fungsi eloquent untuk menghapus data
-            Mahasiswa::find($Nim)->delete();
-            return redirect()->route('mahasiswa.index')
+        Mahasiswa::find($Nim)->delete();
+        return redirect()->route('mahasiswa.index')
             ->with('success', 'Mahasiswa Berhasil Dihapus');
     }
+
     public function search(Request $request)
     {
         $keyword = $request->search;
@@ -130,5 +140,4 @@ class MahasiswaController extends Controller
         return view('mahasiswas.nilai', ['mahasiswa' => $mahasiswa]);
 
     }
-}
-
+};
