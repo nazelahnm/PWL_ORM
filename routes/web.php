@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MahasiswaController;
+
 use Illuminate\Http\Request;
 
 /*
@@ -21,3 +22,6 @@ Route::get('/', function () {
 Route::resource('mahasiswa', MahasiswaController::class);
 Route::get('/search', [MahasiswaController::class, 'search'])->name('search');
 Route::get('/mahasiswa/nilai/{mahasiswa}', [MahasiswaController::class, 'mhsMatkul'])->name('nilai');
+
+use App\Http\Controllers\ArticleController;
+Route::resource('articles', ArticleController::class);
