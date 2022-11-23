@@ -8,6 +8,7 @@ use App\Models\Mahasiswa_MataKuliah;
 use App\Models\MataKuliah;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use PDF;
 
 class MahasiswaController extends Controller
@@ -27,7 +28,7 @@ class MahasiswaController extends Controller
         return view('mahasiswas.index', compact('mahasiswa'))
             ->with('i', (request()->input('page', 1) - 1) * 5);
     }
-    public function create(Request $request)
+    public function create()
     {
         $kelas = Kelas::all(); //mendapatkan data dari tabel kelas
         return view('mahasiswas.create', ['kelas' => $kelas]);
@@ -38,7 +39,7 @@ class MahasiswaController extends Controller
         $request->validate([
             'Nim' => 'required',
             'Nama' => 'required',
-            'foto' => 'required|file|images|mimes:jpeg,png,jpg|max:100',
+            'foto' => 'required|file|image|mimes:jpeg,png,jpg|max:1024',
             'Email' => 'required',
             'Kelas' => 'required',
             'Jurusan' => 'required',
@@ -87,7 +88,7 @@ class MahasiswaController extends Controller
         $request->validate([
             'Nim' => 'required',
             'Nama' => 'required',
-            'foto' => 'required',
+            'foto' => 'required|file|image|mimes:jpeg,png,jpg|max:1024',
             'Email' => 'required',
             'Kelas' => 'required',
             'Jurusan' => 'required',
@@ -99,7 +100,7 @@ class MahasiswaController extends Controller
         $mahasiswa->Nim = $request->get('Nim');
         $mahasiswa->Nama = $request->get('Nama');
         if($mahasiswa->foto && file_exists(storage_path('app/public/'. $mahasiswa->foto))){
-            \Storage::delete('public/'. $mahasiswa->foto);
+            Storage::delete('public/'. $mahasiswa->foto);
         }
         $image_name = $request->file('foto')->store('images', 'public');
         $mahasiswa->foto = $image_name;
@@ -144,7 +145,7 @@ class MahasiswaController extends Controller
 
     public function cetak_pdf($Nim){
         $mahasiswa = Mahasiswa::where('nim', $Nim)->first();
-        $pdf = PDF::loadview('mahasiswas.nilai_pdf',['mahasiswa'=>$mahasiswa]);
+        $pdf = PDF::loadview('mahasiswas.nilai_cetakpdf',['mahasiswa'=>$mahasiswa]);
         return $pdf->stream();
     }
 };
